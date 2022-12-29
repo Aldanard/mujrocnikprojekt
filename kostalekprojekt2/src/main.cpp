@@ -11,10 +11,12 @@
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_MOSI, TFT_SCK, TFT_RST, TFT_MISO);
 //definice pravidel hry
 #define FRAMESPEED 200
+#define FOODSPEED 8000
 #define VIRTUALVYSKA 32
 #define VIRTUALSIRKA 24
 #define VIRTUALNASOB 10
 #define MAXHAD 50
+#define MAXFOOD 5
 
 //piny ovládacích tlačítek
 #define CONTROLUP 16
@@ -23,10 +25,10 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_MOSI, TFT_SCK, TFT_R
 #define CONTROLRIGHT 15
 
 int hadY[MAXHAD], hadX[MAXHAD];
+int foodY[MAXFOOD], foodX[MAXFOOD];
 int direction = 0, score = 0;
-bool pohybProveden = true;
+bool pohybProveden = true, deleteLast = true;
 unsigned long lastFrame = 0, lastFood = 0;
-
 
 //Funkce, která posunuje hlavu hada
 void addHad(int x, int y) {
@@ -41,6 +43,7 @@ void addHad(int x, int y) {
   hadX[0] = x;
   hadY[0] = y;
   pohybProveden = false;
+  deleteLast = true;
 }
 //Nastaví základní hodnoty 
 void defaultSetting() {
@@ -48,12 +51,16 @@ void defaultSetting() {
     hadX[x] = -2;
     hadY[x] = -2;
   }
-
+  for(int x = 0; x<MAXFOOD; x++) {
+    foodX[x] = -1;
+    foodY[x] = -1;
+  }
   hadY[0] = 11;
   hadY[1] = 10;
   hadX[0] = 10;
   hadX[1] = 10;
   pohybProveden = true;
+  deleteLast = true;
   score = 0;
   delay(1000);
 }
@@ -64,6 +71,33 @@ void smrt() {
   tft.print("Zmackni nahoru pro pokracovani!");
   while(digitalRead(CONTROLUP) == HIGH) {}
   defaultSetting();
+}
+//Kontrola vstupních údajů, pokud se jídlo nezobrazí na hadovi
+bool foodCheck(int tfoodX, int tfoodY) {
+  for(int x = 0; x<MAXHAD; x++) {
+    if(hadX[x] != -2) {
+      if(hadX[x] == tfoodX && hadY[x] == tfoodY) {
+        return true;
+      }
+    } else {
+      return false;
+    }
+  }
+}
+//Vybere náhodnou pozici v poli a přidá na ní jídlo
+void addFood() {
+  for(int x = 0; x<MAXFOOD; x++) {
+    if(foodX[x] == -1) {
+      int tfoodX, tfoodY;
+      do{
+        tfoodX = random(1,VIRTUALSIRKA);
+        tfoodY = random(1,VIRTUALVYSKA);
+      } while (foodCheck(tfoodX,tfoodY));
+      foodX[x] = tfoodX;
+      foodY[x] = tfoodY;
+      break;
+    }
+  }
 }
 //nastavení pinů a displaye
 void setup() {
@@ -78,6 +112,7 @@ void setup() {
   tft.setTextSize(2);
 
   defaultSetting();
+  addFood();
 }
 
 void loop() {
@@ -112,16 +147,28 @@ void loop() {
       }
     
     }
-    for(int x = 0; x<MAXHAD; x++) {
-      //Smazání posledního pixelu hada
-      if(hadX[x] == -2) {
-        hadX[x-1] = -2;
-        hadY[x-1] = -2;
+    for(int x = 0; x<MAXFOOD; x++) { //konzumace jidla
+      if(foodX[x] == hadX[0] && foodY[x] == hadY[0]) {
+        deleteLast = false;
+        foodX[x] = -1;
+        foodY[x] = -1;
+        score++;
       }
     }
-
+    if(deleteLast) { 
+      //Smazání posledního pixelu hada, pokud nebylo snězeno jídlo
+      for(int x = 0; x<MAXHAD; x++) {
+        if(hadX[x] == -2) {
+          hadX[x-1] = -2;
+          hadY[x-1] = -2;
+        }
+      }
+    }
+    for(int x = 0; x<MAXFOOD; x++) { //nakreslení jidla
+      if(foodX[x] != -1)
+        tft.fillRect(foodX[x]*VIRTUALNASOB,foodY[x]*VIRTUALNASOB,VIRTUALNASOB,VIRTUALNASOB,0x07E0);
+    }
     for(int x = 0; x<MAXHAD; x++) { //nakreslení hada
-
       if(hadX[x] != -2) {
         if(x == 0) {
           //Vykreslení hlavy hada jinou barvou
@@ -149,5 +196,9 @@ void loop() {
     }
     pohybProveden = true;
     lastFrame = millis();
+  }
+  if(millis() > lastFood + random(FOODSPEED,FOODSPEED*2)) { //Přidání jídlo po náhodném časovém intervalu
+    addFood();
+    lastFood = millis();
   }
 }
