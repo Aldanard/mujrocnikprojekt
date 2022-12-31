@@ -1,6 +1,6 @@
 # mujrocnikprojekt
 
-Gameboy s 5 tlačítky, funkční hra had, score
+Gameboy s 5 tlačítky, funkční hra had, score, přerušování na tlačítkách
 
 
 Hardware:
@@ -8,7 +8,7 @@ https://dratek.cz/arduino/1581-esp-32s-esp32-esp8266-development-board-2.4ghz-du
 https://dratek.cz/arduino/909-dotykovy-displej-2.4-240x320-spi-tft-ili9341.html?fbclid=IwAR3gcc-PE0jNQxS-YPLInVnUp-giJsp6_HlbQd7Fe99zo5IWkX0bnfn0pDs
 
 Software:
+Visual studio code
 Platformio IDE
-Simulační software:
-Wokvi
-https://wokwi.com/projects/347067642150912594
+Simulační software (Na testování): Wokvi
+
