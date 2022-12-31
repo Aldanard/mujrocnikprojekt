@@ -8,7 +8,7 @@ https://dratek.cz/arduino/1581-esp-32s-esp32-esp8266-development-board-2.4ghz-du
 https://dratek.cz/arduino/909-dotykovy-displej-2.4-240x320-spi-tft-ili9341.html?fbclid=IwAR3gcc-PE0jNQxS-YPLInVnUp-giJsp6_HlbQd7Fe99zo5IWkX0bnfn0pDs
 
 Software:
-Arduino IDE
+Platformio IDE
 Simulační software:
 Wokvi
 https://wokwi.com/projects/347067642150912594
