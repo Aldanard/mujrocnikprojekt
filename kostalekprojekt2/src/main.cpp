@@ -7,15 +7,15 @@
 #define TFT_MISO   19
 #define TFT_CS     5
 #define TFT_DC     21
-#define TFT_RST  22
+#define TFT_RST    22
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_MOSI, TFT_SCK, TFT_RST, TFT_MISO);
 //definice pravidel hry
-#define FRAMESPEED 200
+#define FRAMESPEED 300
 #define FOODSPEED 8000
 #define VIRTUALVYSKA 32
 #define VIRTUALSIRKA 24
 #define VIRTUALNASOB 10
-#define MAXHAD 50
+#define MAXHAD 500
 #define MAXFOOD 5
 
 //piny ovládacích tlačítek
@@ -62,13 +62,15 @@ void defaultSetting() {
   pohybProveden = true;
   deleteLast = true;
   score = 0;
+  tft.fillScreen(ILI9341_BLACK);
   delay(1000);
 }
 //Napíše text na obrazovku a zastaví kód, dokud není zmáčknuto tlačítko nahoru
 void smrt() {
   tft.setCursor(20,60);
   tft.println("You died!");
-  tft.print("Zmackni nahoru pro pokracovani!");
+  tft.print("Push Up button to   continue.");
+
   while(digitalRead(CONTROLUP) == HIGH) {}
   defaultSetting();
 }
@@ -99,6 +101,31 @@ void addFood() {
     }
   }
 }
+//Definice interuptů pro tlačítka
+void IRAM_ATTR iup(){
+  if (pohybProveden && direction != CONTROLDOWN) {
+      direction = CONTROLUP;
+      addHad(hadX[0],hadY[0]-1);
+    }
+}
+void IRAM_ATTR idown(){
+  if (pohybProveden && direction != CONTROLUP) {
+      direction = CONTROLDOWN;
+      addHad(hadX[0],hadY[0]+1);
+  }
+}
+void IRAM_ATTR ileft(){
+  if (pohybProveden && direction != CONTROLRIGHT) {
+      direction = CONTROLLEFT;
+      addHad(hadX[0]-1,hadY[0]);
+    }
+}
+void IRAM_ATTR iright(){
+  if (pohybProveden && direction != CONTROLLEFT) {
+      direction = CONTROLRIGHT;
+      addHad(hadX[0]+1,hadY[0]);
+    }
+}
 //nastavení pinů a displaye
 void setup() {
   Serial.begin(115200);
@@ -106,7 +133,10 @@ void setup() {
   pinMode(CONTROLLEFT, INPUT_PULLUP);
   pinMode(CONTROLDOWN, INPUT_PULLUP);
   pinMode(CONTROLRIGHT, INPUT_PULLUP);
-
+  attachInterrupt(CONTROLUP,iup,FALLING);
+  attachInterrupt(CONTROLDOWN,idown,FALLING);
+  attachInterrupt(CONTROLLEFT,ileft,FALLING);
+  attachInterrupt(CONTROLRIGHT,iright,FALLING);
   tft.begin();
   tft.setTextColor(ILI9341_WHITE);
   tft.setTextSize(2);
@@ -116,25 +146,8 @@ void setup() {
 }
 
 void loop() {
-  if(pohybProveden) { //posunutí hada podle tlačítek
-    if (digitalRead(CONTROLUP) == LOW && direction != CONTROLDOWN) {
-      direction = CONTROLUP;
-      addHad(hadX[0],hadY[0]-1);
-    } else if (digitalRead(CONTROLLEFT) == LOW && direction != CONTROLRIGHT) {
-      direction = CONTROLLEFT;
-      addHad(hadX[0]-1,hadY[0]);
-    } else if (digitalRead(CONTROLDOWN) == LOW && direction != CONTROLUP) {
-      direction = CONTROLDOWN;
-      addHad(hadX[0],hadY[0]+1);
-    } else if (digitalRead(CONTROLRIGHT) == LOW && direction != CONTROLLEFT) {
-      direction = CONTROLRIGHT;
-      addHad(hadX[0]+1,hadY[0]);
-    }
-  }
-
   if(millis() > lastFrame + FRAMESPEED) { 
     //vyrenderování snímku
-    tft.fillScreen(ILI9341_BLACK);
     if(pohybProveden) { //Posunutí hada pokud nebyla určena změna směru
       if(hadX[0] > hadX[1]) {
         addHad(hadX[0]+1,hadY[0]);
@@ -159,6 +172,8 @@ void loop() {
       //Smazání posledního pixelu hada, pokud nebylo snězeno jídlo
       for(int x = 0; x<MAXHAD; x++) {
         if(hadX[x] == -2) {
+          //Mazání posledního pixelu na displayu pro urychlení pohybu (lepší než mazat display celý)
+          tft.fillRect(hadX[x-1]*VIRTUALNASOB,hadY[x-1]*VIRTUALNASOB,VIRTUALNASOB,VIRTUALNASOB,0x0000);
           hadX[x-1] = -2;
           hadY[x-1] = -2;
         }
@@ -182,6 +197,11 @@ void loop() {
     }
     tft.drawRect(0,0,240,320,0xFFFF);
     tft.setCursor(20,20);
+    //přemazání starého skóre jiným
+     tft.setTextColor(ILI9341_BLACK);
+    tft.print(score-1);
+    tft.setCursor(20,20);
+     tft.setTextColor(ILI9341_WHITE);
     tft.print(score);
     //Kontrola nabourání do stěny
     if(hadX[0] > VIRTUALSIRKA-1 || hadX[0] < 0 || hadY[0] > VIRTUALVYSKA-1 || hadY[0] < 0) {
