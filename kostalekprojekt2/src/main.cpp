@@ -184,7 +184,7 @@ void loop() {
         tft.fillRect(foodX[x]*VIRTUALNASOB,foodY[x]*VIRTUALNASOB,VIRTUALNASOB,VIRTUALNASOB,0x07E0);
     }
     for(int x = 0; x<MAXHAD; x++) { //nakreslení hada
-      if(hadX[x] != -2) {
+      if(hadX[x] != -2 && x<2) {
         if(x == 0) {
           //Vykreslení hlavy hada jinou barvou
           tft.fillRect(hadX[x]*VIRTUALNASOB,hadY[x]*VIRTUALNASOB,VIRTUALNASOB,VIRTUALNASOB,0xFC00);
